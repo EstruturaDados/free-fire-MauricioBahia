@@ -1,0 +1,228 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+// Definições de constantes e enum
+#define MAX_ITENS 10
+
+typedef enum {
+    NOME,
+    TIPO,
+    PRIORIDADE
+} CriterioOrdenacao;
+
+typedef struct {
+    char nome[50];
+    char tipo[50];
+    int quantidade;
+    int prioridade; // Prioridade de 1 (mais alta) a 5 (mais baixa)
+} Item;
+
+Item mochila[MAX_ITENS]; // Vetor de itens
+int numItens = 0;        // Quantidade atual de itens na mochila
+bool ordenadaPorNome = false; // Controle para buscar binária
+
+// Função para limpar a tela
+void limparTela() {
+    for (int i = 0; i < 20; i++) {
+        printf("\n");
+    }
+}
+
+// Função para exibir o menu
+void exibirMenu() {
+    printf("---- Menu ----\n");
+    printf("1. Adicionar um item\n");
+    printf("2. Remover um item\n");
+    printf("3. Listar todos os itens\n");
+    printf("4. Ordenar os itens\n");
+    printf("5. Buscar item por nome\n");
+    printf("0. Sair\n");
+    printf("Escolha uma opção: ");
+}
+
+// Função para inserir um novo item
+void inserirItem() {
+    if (numItens >= MAX_ITENS) {
+        printf("Mochila cheia! Não é possível adicionar mais itens.\n");
+        return;
+    }
+
+    Item novoItem;
+    printf("Digite o nome do item: ");
+    getchar(); // Limpa o buffer
+    fgets(novoItem.nome, sizeof(novoItem.nome), stdin);
+    novoItem.nome[strcspn(novoItem.nome, "\n")] = '\0'; // Remover o '\n'
+
+    printf("Digite o tipo do item: ");
+    fgets(novoItem.tipo, sizeof(novoItem.tipo), stdin);
+    novoItem.tipo[strcspn(novoItem.tipo, "\n")] = '\0'; // Remover o '\n'
+
+    printf("Digite a quantidade do item: ");
+    scanf("%d", &novoItem.quantidade);
+
+    printf("Digite a prioridade (1-5, sendo 1 a mais alta): ");
+    scanf("%d", &novoItem.prioridade);
+
+    mochila[numItens++] = novoItem;
+    ordenadaPorNome = false; // Após adicionar, a lista não estará mais ordenada por nome
+    printf("Item adicionado com sucesso!\n");
+}
+
+// Função para remover um item
+void removerItem() {
+    if (numItens == 0) {
+        printf("A mochila está vazia.\n");
+        return;
+    }
+
+    char nomeItem[50];
+    printf("Digite o nome do item a ser removido: ");
+    getchar(); // Limpa o buffer
+    fgets(nomeItem, sizeof(nomeItem), stdin);
+    nomeItem[strcspn(nomeItem, "\n")] = '\0'; // Remover o '\n'
+
+    for (int i = 0; i < numItens; i++) {
+        if (strcmp(mochila[i].nome, nomeItem) == 0) {
+            // Encontrado o item, remover ele deslocando os outros
+            for (int j = i; j < numItens - 1; j++) {
+                mochila[j] = mochila[j + 1];
+            }
+            numItens--;
+            printf("Item removido com sucesso!\n");
+            return;
+        }
+    }
+
+    printf("Item não encontrado na mochila.\n");
+}
+
+// Função para listar todos os itens
+void listarItens() {
+    if (numItens == 0) {
+        printf("A mochila está vazia.\n");
+        return;
+    }
+
+    printf("Itens na mochila:\n");
+    printf("Nome\t\tTipo\t\tQuantidade\tPrioridade\n");
+    printf("------------------------------------------------------\n");
+    for (int i = 0; i < numItens; i++) {
+        printf("%s\t\t%s\t\t%d\t\t%d\n", mochila[i].nome, mochila[i].tipo, mochila[i].quantidade, mochila[i].prioridade);
+    }
+}
+
+// Função de ordenação por inserção
+void insertionSort(CriterioOrdenacao criterio) {
+    for (int i = 1; i < numItens; i++) {
+        Item key = mochila[i];
+        int j = i - 1;
+
+        while (j >= 0 && (criterio == NOME && strcmp(mochila[j].nome, key.nome) > 0 ||
+                          criterio == TIPO && strcmp(mochila[j].tipo, key.tipo) > 0 ||
+                          criterio == PRIORIDADE && mochila[j].prioridade > key.prioridade)) {
+            mochila[j + 1] = mochila[j];
+            j--;
+        }
+        mochila[j + 1] = key;
+    }
+}
+
+// Função para buscar um item por nome usando busca binária
+void buscaBinariaPorNome() {
+    if (!ordenadaPorNome) {
+        printf("A mochila não está ordenada por nome. Ordenando agora...\n");
+        insertionSort(NOME);
+        ordenadaPorNome = true;
+    }
+
+    char nomeItem[50];
+    printf("Digite o nome do item para buscar: ");
+    getchar(); // Limpa o buffer
+    fgets(nomeItem, sizeof(nomeItem), stdin);
+    nomeItem[strcspn(nomeItem, "\n")] = '\0'; // Remover o '\n'
+
+    int inicio = 0, fim = numItens - 1;
+    while (inicio <= fim) {
+        int meio = (inicio + fim) / 2;
+        int comparacao = strcmp(mochila[meio].nome, nomeItem);
+
+        if (comparacao == 0) {
+            printf("Item encontrado: %s\t%s\t%d\t%d\n", mochila[meio].nome, mochila[meio].tipo, mochila[meio].quantidade, mochila[meio].prioridade);
+            return;
+        } else if (comparacao < 0) {
+            inicio = meio + 1;
+        } else {
+            fim = meio - 1;
+        }
+    }
+
+    printf("Item não encontrado.\n");
+}
+
+// Função para menu de ordenação
+void menuDeOrdenacao() {
+    printf("Escolha o critério de ordenação:\n");
+    printf("1. Ordenar por nome\n");
+    printf("2. Ordenar por tipo\n");
+    printf("3. Ordenar por prioridade\n");
+    printf("Escolha uma opção: ");
+    int escolha;
+    scanf("%d", &escolha);
+
+    switch (escolha) {
+        case 1:
+            insertionSort(NOME);
+            break;
+        case 2:
+            insertionSort(TIPO);
+            break;
+        case 3:
+            insertionSort(PRIORIDADE);
+            break;
+        default:
+            printf("Opção inválida!\n");
+            return;
+    }
+
+    printf("Itens ordenados com sucesso!\n");
+}
+
+// Função principal
+int main() {
+    int opcao;
+    do {
+        limparTela();
+        exibirMenu();
+        scanf("%d", &opcao);
+
+        switch (opcao) {
+            case 1:
+                inserirItem();
+                break;
+            case 2:
+                removerItem();
+                break;
+            case 3:
+                listarItens();
+                break;
+            case 4:
+                menuDeOrdenacao();
+                break;
+            case 5:
+                buscaBinariaPorNome();
+                break;
+            case 0:
+                printf("Saindo...\n");
+                break;
+            default:
+                printf("Opção inválida! Tente novamente.\n");
+        }
+        printf("\nPressione Enter para continuar...");
+        getchar(); // Limpa o buffer e aguarda o usuário pressionar Enter
+        getchar();
+    } while (opcao != 0);
+
+    return 0;
+}
